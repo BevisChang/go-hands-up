@@ -1,48 +1,44 @@
 package localcache
 
 import (
-	"errors"
-	"time"
+	"github.com/stretchr/testify/assert"
+	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
-const expiredTime = 30 * time.Second
-
-type LocalCache struct {
-	store map[string]CacheItem
+type LocalCacheTestSuite struct {
+	suite.Suite
+	localCache Cache
+	key        string
+	value      cacheValue
 }
 
-type CacheItem struct {
-	value       interface{}
-	expireTimer *time.Timer
+type cacheValue struct {
+	name string
 }
 
-func New() Cache {
-	instance := &LocalCache{
-		store: map[string]CacheItem{},
-	}
-	return instance
+func (suite *LocalCacheTestSuite) SetupTest() {
+	suite.localCache = New()
 }
 
-func (lc *LocalCache) Get(key string) (value interface{}, e error) {
-	cacheItem, ok := lc.store[key]
-	if ok {
-		value = cacheItem.value
-		return
-	}
-	e = errors.New("fail to get cache by key")
-	return
+func (suite *LocalCacheTestSuite) TestLocalCache_Set() {
+	key := "key"
+
+	_ = suite.localCache.Set(key, cacheValue{name: "John"})
+	got, _ := suite.localCache.Get(key)
+
+	assert.Equal(suite.T(), cacheValue{name: "John"}, got)
 }
 
-func (lc *LocalCache) Set(key string, value interface{}) error {
-	lc.store[key] = CacheItem{
-		value: value,
-		expireTimer: time.AfterFunc(expiredTime, func() {
-			lc.clean(key)
-		}),
-	}
-	return nil
+func (suite *LocalCacheTestSuite) TestLocalCache_Get() {
+	key := "key"
+
+	error := suite.localCache.Set(key, cacheValue{name: "John"})
+
+	assert.Nil(suite.T(), error)
 }
 
-func (lc *LocalCache) clean(key string) {
-	delete(lc.store, key)
+func TestTestLocalCacheSuite(t *testing.T) {
+	suite.Run(t, new(LocalCacheTestSuite))
 }
