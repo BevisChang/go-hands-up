@@ -22,7 +22,6 @@ func (suite *LocalCacheTestSuite) SetupTest() {
 	suite.localCache = New().(*LocalCache)
 	suite.key = "key"
 	suite.value = cacheValue{name: "John"}
-
 }
 
 func (suite *LocalCacheTestSuite) TestLocalCache_Set() {

@@ -2,6 +2,7 @@ package localcache
 
 import (
 	"errors"
+	"sync"
 	"time"
 )
 
@@ -11,7 +12,8 @@ const expiredTime = 30 * time.Second
 var ErrNotFound = errors.New("fail to get cache by key")
 
 type LocalCache struct {
-	store map[string]CacheItem
+	store  map[string]CacheItem
+	locker sync.Mutex
 }
 
 type CacheItem struct {
@@ -21,7 +23,8 @@ type CacheItem struct {
 
 func New() Cache {
 	instance := &LocalCache{
-		store: map[string]CacheItem{},
+		store:  map[string]CacheItem{},
+		locker: sync.Mutex{},
 	}
 	return instance
 }
@@ -37,6 +40,8 @@ func (lc *LocalCache) Get(key string) (value interface{}, e error) {
 }
 
 func (lc *LocalCache) Set(key string, value interface{}) error {
+	lc.locker.Lock()
+	defer lc.locker.Unlock()
 	lc.store[key] = CacheItem{
 		value: value,
 		expireTimer: time.AfterFunc(expiredTime, func() {
@@ -47,5 +52,7 @@ func (lc *LocalCache) Set(key string, value interface{}) error {
 }
 
 func (lc *LocalCache) clean(key string) {
+	lc.locker.Lock()
+	defer lc.locker.Unlock()
 	delete(lc.store, key)
 }
