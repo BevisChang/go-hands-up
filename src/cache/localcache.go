@@ -7,6 +7,9 @@ import (
 
 const expiredTime = 30 * time.Second
 
+// ErrNotFound will throw when user get cache by key, but key is not exist in cache
+var ErrNotFound = errors.New("fail to get cache by key")
+
 type LocalCache struct {
 	store map[string]CacheItem
 }
@@ -29,7 +32,7 @@ func (lc *LocalCache) Get(key string) (value interface{}, e error) {
 		value = cacheItem.value
 		return
 	}
-	e = errors.New("fail to get cache by key")
+	e = ErrNotFound
 	return
 }
 
