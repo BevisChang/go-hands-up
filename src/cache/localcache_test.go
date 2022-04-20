@@ -19,24 +19,24 @@ type cacheValue struct {
 }
 
 func (suite *LocalCacheTestSuite) SetupTest() {
-	suite.localCache = New()
+	suite.localCache = New().(*LocalCache)
+	suite.key = "key"
+	suite.value = cacheValue{name: "John"}
+
 }
 
 func (suite *LocalCacheTestSuite) TestLocalCache_Set() {
-	key := "key"
+	suite.localCache.(*LocalCache).store[suite.key] = CacheItem{value: suite.value, expireTimer: nil}
 
-	_ = suite.localCache.Set(key, cacheValue{name: "John"})
-	got, _ := suite.localCache.Get(key)
+	got, _ := suite.localCache.Get(suite.key)
 
-	assert.Equal(suite.T(), cacheValue{name: "John"}, got)
+	assert.Equal(suite.T(), suite.value, got)
 }
 
 func (suite *LocalCacheTestSuite) TestLocalCache_Get() {
-	key := "key"
+	err := suite.localCache.Set(suite.key, suite.value)
 
-	error := suite.localCache.Set(key, cacheValue{name: "John"})
-
-	assert.Nil(suite.T(), error)
+	assert.Nil(suite.T(), err)
 }
 
 func TestTestLocalCacheSuite(t *testing.T) {
