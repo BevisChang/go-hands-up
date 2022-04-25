@@ -2,13 +2,18 @@ package localcache
 
 import (
 	"errors"
+	"sync"
 	"time"
 )
 
 const expiredTime = 30 * time.Second
 
+// ErrNotFound will throw when user get cache by key, but key is not exist in cache
+var ErrNotFound = errors.New("fail to get cache by key")
+
 type LocalCache struct {
-	store map[string]CacheItem
+	store  map[string]CacheItem
+	locker sync.Mutex
 }
 
 type CacheItem struct {
@@ -18,7 +23,8 @@ type CacheItem struct {
 
 func New() Cache {
 	instance := &LocalCache{
-		store: map[string]CacheItem{},
+		store:  map[string]CacheItem{},
+		locker: sync.Mutex{},
 	}
 	return instance
 }
@@ -29,11 +35,13 @@ func (lc *LocalCache) Get(key string) (value interface{}, e error) {
 		value = cacheItem.value
 		return
 	}
-	e = errors.New("fail to get cache by key")
+	e = ErrNotFound
 	return
 }
 
 func (lc *LocalCache) Set(key string, value interface{}) error {
+	lc.locker.Lock()
+	defer lc.locker.Unlock()
 	lc.store[key] = CacheItem{
 		value: value,
 		expireTimer: time.AfterFunc(expiredTime, func() {
@@ -44,5 +52,7 @@ func (lc *LocalCache) Set(key string, value interface{}) error {
 }
 
 func (lc *LocalCache) clean(key string) {
+	lc.locker.Lock()
+	defer lc.locker.Unlock()
 	delete(lc.store, key)
 }
